@@ -138,8 +138,7 @@
 		var getConditionEmoji = function(chance) {
 			switch(chance) {
 				case 'clear': 
-					// return '🌞';
-					return '🌜';
+					return '🌞';
 				case 'chance':
 					return '🌤';
 				case 'possible':
@@ -164,9 +163,7 @@
 		 * Is this hour in the evening? Display the moon?
 		 */
 		var isEvening = function(hour) {
-			console.log(hour);
-
-			return true;
+			return ((hour < 8) || (hour > 19));
 		};
 
 		/**
@@ -176,7 +173,7 @@
 			var chance = getPrecipChance(period.precip);
 
 			var periodDate = new Date(period.start);
-			var hour = formatHour(periodDate.getHours());
+			var hour = periodDate.getHours();
 			var yloc = iter * 35;
 
 			// precipitation block
@@ -187,7 +184,7 @@
 
 			// hour
 			var time = document.createElementNS(xmlns, 'text');
-			time.textContent = hour;
+			time.textContent = formatHour(hour);
 			time.setAttributeNS(null, 'x', 40);
 			time.setAttributeNS(null, 'y', yloc + 20);
 			svg.append(time);
@@ -195,10 +192,10 @@
 			// condition
 			var condition = document.createElementNS(xmlns, 'text');
 			var emoji = getConditionEmoji(chance);
-			if ((chance === 'clear') && isEvening(hour)) {
-				emoji = '🌜';
-			}
 			condition.textContent = emoji;
+			if ((chance === 'clear') && isEvening(hour)) {
+				condition.textContent = '🌙';
+			}
 			condition.setAttributeNS(null, 'x', 90);
 			condition.setAttributeNS(null, 'y', yloc + 20);
 			condition.classList.add('condition');
@@ -234,7 +231,6 @@
 			var weatherData = formatData(data);
 
 			var todayData = weatherData.slice(0, 15);
-			console.log(todayData);
 			renderToday(todayData);
 		}).catch(function (err) {
 			// There was an error
@@ -246,7 +242,7 @@
 
 <body>
 
-<svg width="550" height="850"></svg>
+<svg height="100%" viewBox="0 0 600 580"></svg>
 
 </body>
 </html>
