@@ -1,3 +1,6 @@
+/**
+ * Render the fresh weather SVG.
+ */
 var xmlns = 'http://www.w3.org/2000/svg';
 var apiURL = 'https://api.weather.gov/gridpoints/DTX/40,28/forecast/hourly';
 var lineDomain = {
@@ -102,18 +105,21 @@ var getPrecipChance = function(chance) {
 	return 'falling';
 };
 
-var getConditionEmoji = function(chance) {
+var getConditionEmoji = function(chance, isEvening) {
 	switch(chance) {
 		case 'clear': 
-			return '🌞';
+			if (isEvening) {
+				return String.fromCodePoint('0x1F319');
+			}
+			return String.fromCodePoint('0x1F31E');
 		case 'chance':
-			return '🌤';
+			return String.fromCodePoint('0x1F324');
 		case 'possible':
-			return '☁';
+			return String.fromCodePoint('0x1F325');
 		case 'likely':
-			return '🌦';
+			return String.fromCodePoint('0x1F326');
 		case 'falling':
-			return '🌧';
+			return String.fromCodePoint('0x1F327');
 	}
 
 	return '?';
@@ -158,11 +164,8 @@ var drawRow = function(svg, iter, period, range) {
 
 	// condition
 	var condition = document.createElementNS(xmlns, 'text');
-	var emoji = getConditionEmoji(chance);
+	var emoji = getConditionEmoji(chance, isEvening(hour));
 	condition.textContent = emoji;
-	if ((chance === 'clear') && isEvening(hour)) {
-		condition.textContent = '🌙';
-	}
 	condition.setAttributeNS(null, 'x', 90);
 	condition.setAttributeNS(null, 'y', yloc + 20);
 	condition.classList.add('condition');
@@ -179,7 +182,7 @@ var drawRow = function(svg, iter, period, range) {
 
 	// temperature number
 	var tempr = document.createElementNS(xmlns, 'text');
-	tempr.textContent = period.temp + '°';
+	tempr.textContent = period.temp + String.fromCodePoint('0x00B0');
 	tempr.setAttributeNS(null, 'x', lineLength);
 	tempr.setAttributeNS(null, 'y', yloc + 20);
 	if (period.temp < 33) {
@@ -203,4 +206,3 @@ fetch(apiURL).then(function (response) {
 	// There was an error
 	console.warn('Something went wrong.', err);
 });
-
