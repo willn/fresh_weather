@@ -7,6 +7,10 @@ var lineDomain = {
 	'low': 150,
 	'high': 500,
 };
+var heightDimensions = {
+	'headline': 40,
+	'rowHeight': 35,
+};
 
 /**
  * Take the weathr.gov JSON and grab the pieces we want.
@@ -51,57 +55,21 @@ var getMinMaxTemps = function(periods) {
 };
 
 /**
- * Render the page.
- */
-var renderToday= function(weatherData) {
-	var svg = document.querySelector('svg');
-	var range = getMinMaxTemps(weatherData);
-
-	for (var iter = 0; iter < weatherData.length; iter++) {
-		drawRow(svg, iter, weatherData[iter], range);
-	}
-};
-
-/**
  * Format the hour string for display
  */
 var formatHour = function(hour) {
-	if (hour === 0) {
-		return '12 AM';
-	}
-
-	if (hour < 12) {
-		return hour + ' AM';
-	}
-
-	if (hour === 12) {
-		return hour + ' PM';
-	}
-
-	if (hour != 24) {
-		return (hour % 12) + ' PM';
-	}
-
+	if (hour === 0) { return '12 AM'; }
+	if (hour < 12) { return hour + ' AM'; }
+	if (hour === 12) { return hour + ' PM'; }
+	if (hour != 24) { return (hour % 12) + ' PM'; }
 	return hour;
 };
 
 var getPrecipChance = function(chance) {
-	if (chance === 0) {
-		return 'clear';
-	}
-
-	if (chance < 30) {
-		return 'chance';
-	}
-
-	if (chance < 60) {
-		return 'possible';
-	}
-
-	if (chance < 95) {
-		return 'likely';
-	}
-
+	if (chance === 0) { return 'clear'; }
+	if (chance < 30) { return 'chance'; }
+	if (chance < 60) { return 'possible'; }
+	if (chance < 95) { return 'likely'; }
 	return 'falling';
 };
 
@@ -133,6 +101,31 @@ var getTempLineLength = function(temp, range) {
 };
 
 /**
+ * Render the hourly view for today.
+ */
+var renderToday = function(weatherData) {
+	var svg = document.querySelector('svg'),
+		range = getMinMaxTemps(weatherData);
+
+	// display today's date and current temp
+	var day = document.createElementNS(xmlns, 'text');
+	day.textContent = 'now: ' + weatherData[0].temp;
+	day.setAttributeNS(null, 'x', 140);
+	day.setAttributeNS(null, 'y', heightDimensions.headline * .9);
+	day.classList.add('headline');
+	svg.append(day);
+
+	// hide the loader
+	if (weatherData) {
+		document.querySelector('#loading').style.display = 'none';
+	}
+
+	for (var iter = 0; iter < weatherData.length; iter++) {
+		drawRow(svg, iter, weatherData[iter], range);
+	}
+};
+
+/**
  * Is this hour in the evening? Display the moon?
  */
 var isEvening = function(hour) {
@@ -141,13 +134,18 @@ var isEvening = function(hour) {
 
 /**
  * Draw the SVG contents
+ *
+ * svg - querySelector element
+ * iter - the row number
+ * period - the object representing a period of time, starting with 1 hour
+ * range - an object containing the min and max temperature for the entire
+ *     group.
  */
 var drawRow = function(svg, iter, period, range) {
 	var chance = getPrecipChance(period.precip);
-
 	var periodDate = new Date(period.start);
 	var hour = periodDate.getHours();
-	var yloc = iter * 35;
+	var yloc = (iter * heightDimensions.rowHeight) + (heightDimensions.headline * 1.3);
 
 	// precipitation block
 	var rect = document.createElementNS(xmlns, 'rect');

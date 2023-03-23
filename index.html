@@ -13,7 +13,6 @@
 			width: 30px;
 			height: 50px;
 		}
-
 		rect.clear { fill: #e3e3e3; }
 		rect.chance { fill: #a1a1a1; }
 		rect.possible { fill: #8c8c8c; }
@@ -21,10 +20,13 @@
 		rect.falling { fill: #78c0ed; }
 
 		text {
-			stroke-width: 1;
+			stroke-width: .25px;
 			stroke: #000;
 			font-family: arial;
 			font-size: 13px;
+		}
+		text.headline {
+			font-size: 25px;
 		}
 		/* emojis */
 		text.condition { font-size: 25px; }
@@ -41,7 +43,9 @@
 
 <body>
 
-<svg height="100%" viewBox="0 0 600 580"></svg>
+<svg height="100%" viewBox="0 0 600 580">
+	<text x="120" y="140" id="loading">Loading...</text>
+</svg>
 
 </body>
 </html>
