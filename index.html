@@ -2,8 +2,6 @@
 <head>
 	<style>
 		svg { 
-			height: auto;
-			width: auto;
 			max-width: 100%;
 		}
 
@@ -11,7 +9,7 @@
 			stroke-width: 0;
 			fill: #ccc;
 			width: 30px;
-			height: 50px;
+			height: 40px;
 		}
 		rect.clear { fill: #e3e3e3; }
 		rect.chance { fill: #a1a1a1; }
@@ -36,6 +34,10 @@
 			stroke-width: 1;
 			stroke: #ccc;
 		}
+		line.day_range {
+			stroke-linecap: round;
+			stroke-width: 8px;
+		}
 	</style>
 	<script src="render.js"></script>
 </head>
@@ -43,7 +45,7 @@
 
 <body>
 
-<svg height="100%" viewBox="0 0 600 580">
+<svg height="100%" viewBox="0 0 600 700">
 	<text x="120" y="140" id="loading">Loading...</text>
 </svg>
 

@@ -7,10 +7,9 @@ var lineDomain = {
 	'low': 150,
 	'high': 500,
 };
-var heightDimensions = {
-	'headline': 40,
-	'rowHeight': 35,
-};
+var rowHeight = 35;
+var numHourRows = 12;
+var degreeMark = String.fromCodePoint('0x00B0');
 
 /**
  * Take the weathr.gov JSON and grab the pieces we want.
@@ -93,10 +92,15 @@ var getConditionEmoji = function(chance, isEvening) {
 	return '?';
 };
 
-var getTempLineLength = function(temp, range) {
+/**
+ * Given a temperature value and a range, figure out how much of a percentage
+ * this value is.
+ */
+var getTempRangePercent = function(temp, range) {
 	var tempDiff = range.max - range.min;
 	var curAboveMinPct = (temp - range.min) / tempDiff;
 	var lineDiff = lineDomain.high - lineDomain.low;
+
 	return (curAboveMinPct * lineDiff) + lineDomain.low;
 };
 
@@ -107,23 +111,68 @@ var renderToday = function(weatherData) {
 	var svg = document.querySelector('svg'),
 		range = getMinMaxTemps(weatherData);
 
-	// display today's date and current temp
-	var day = document.createElementNS(xmlns, 'text');
-	day.textContent = 'now: ' + weatherData[0].temp;
-	day.setAttributeNS(null, 'x', 140);
-	day.setAttributeNS(null, 'y', heightDimensions.headline * .9);
-	day.classList.add('headline');
-	svg.append(day);
-
 	// hide the loader
 	if (weatherData) {
 		document.querySelector('#loading').style.display = 'none';
 	}
 
 	for (var iter = 0; iter < weatherData.length; iter++) {
-		drawRow(svg, iter, weatherData[iter], range);
+		drawHourRow(svg, iter, weatherData[iter], range);
 	}
 };
+
+/**
+ *
+ */
+var getDateInIsoFormat = function() {
+	var ddd = new Date();
+	const offset = ddd.getTimezoneOffset();
+	ddd = new Date(ddd.getTime() - (offset*60*1000));
+	return ddd.toISOString().split('T')[0];
+};
+
+/**
+ * Render the daily stats for the week
+ */
+var renderWeek = function(weatherData) {
+	var svg = document.querySelector('svg'),
+		weekRange = getMinMaxTemps(weatherData),
+		today = new Date(),
+		todayIso = getDateInIsoFormat(today),
+		prevDate = todayIso,
+		sliceDate = '',
+		dayCount = 0,
+		tranche = [];
+
+	// divide up the remaining days into day-tranches
+	for (var iter = 0; iter < weatherData.length; iter++) {
+		sliceDate = weatherData[iter].start.slice(0, 10);
+
+		// the first slice of a new date
+		if (sliceDate !== prevDate) {
+			if (tranche.length) {
+				renderWeekDay(tranche, weekRange, dayCount);
+			}
+			tranche = [];
+			tranche.push(weatherData[iter]);
+			prevDate = sliceDate;
+			dayCount++;
+			continue;
+		}
+
+		tranche.push(weatherData[iter]);
+		prevDate = sliceDate;
+	}
+
+	/*
+	#!!#
+	for (var iter = 0; iter < weatherData.length; iter++) {
+		drawHourRow(svg, iter, weatherData[iter], range);
+	}
+	*/
+	renderWeekDay(tranche, weekRange, dayCount);
+};
+
 
 /**
  * Is this hour in the evening? Display the moon?
@@ -141,15 +190,16 @@ var isEvening = function(hour) {
  * range - an object containing the min and max temperature for the entire
  *     group.
  */
-var drawRow = function(svg, iter, period, range) {
+var drawHourRow = function(svg, iter, period, range) {
 	var chance = getPrecipChance(period.precip);
 	var periodDate = new Date(period.start);
 	var hour = periodDate.getHours();
-	var yloc = (iter * heightDimensions.rowHeight) + (heightDimensions.headline * 1.3);
+	var yloc = (iter * rowHeight);
 
 	// precipitation block
 	var rect = document.createElementNS(xmlns, 'rect');
 	rect.setAttributeNS(null, 'y', yloc);
+	rect.setAttributeNS(null, 'height', rowHeight);
 	rect.classList.add(chance);
 	svg.append(rect);
 
@@ -170,23 +220,101 @@ var drawRow = function(svg, iter, period, range) {
 	svg.append(condition);
 
 	// temperature line
-	var lineLength = getTempLineLength(period.temp, range);
+	var lineLength = getTempRangePercent(period.temp, range);
 	var line = document.createElementNS(xmlns, 'line');
 	line.setAttributeNS(null, 'x1', 150);
-	line.setAttributeNS(null, 'x2', (lineLength - 10));
+	line.setAttributeNS(null, 'x2', lineLength);
 	line.setAttributeNS(null, 'y1', yloc + 15);
 	line.setAttributeNS(null, 'y2', yloc + 15);
 	svg.append(line);
 
 	// temperature number
 	var tempr = document.createElementNS(xmlns, 'text');
-	tempr.textContent = period.temp + String.fromCodePoint('0x00B0');
-	tempr.setAttributeNS(null, 'x', lineLength);
+	tempr.textContent = period.temp + degreeMark;
+	tempr.setAttributeNS(null, 'x', lineLength + 10);
 	tempr.setAttributeNS(null, 'y', yloc + 20);
 	if (period.temp < 33) {
 		tempr.classList.add('freezing');
 	}
 	svg.append(tempr);
+};
+
+/**
+ *
+ */
+var getWorstWeather = function(tranche) {
+	var precip = 0;
+
+	for (var iter = 0; iter < tranche.length; iter++) {
+		if (tranche[iter].precip > precip) {
+			precip = tranche[iter].precip;
+		}
+	}
+
+	return precip;
+};
+
+/**
+ *
+ */
+var renderWeekDay = function(daySlices, weekRange, dayCount) {
+	var range = getMinMaxTemps(daySlices),
+		svg = document.querySelector('svg'),
+		today = new Date(daySlices[0].start),
+		yloc = (numHourRows * rowHeight) + (dayCount * rowHeight),
+		precip = getWorstWeather(daySlices);
+
+
+	console.log(range, weekRange);
+
+	// day of week
+	var day = document.createElementNS(xmlns, 'text');
+	day.textContent = today.toLocaleDateString(undefined, {weekday: 'long'}).substring(0, 3);
+	day.setAttributeNS(null, 'x', 40);
+	day.setAttributeNS(null, 'y', yloc + 20);
+	svg.append(day);
+
+	// condition
+	var condition = document.createElementNS(xmlns, 'text');
+	var chance = getPrecipChance(precip);
+	var emoji = getConditionEmoji(chance, false);
+	condition.textContent = emoji;
+	condition.setAttributeNS(null, 'x', 90);
+	condition.setAttributeNS(null, 'y', yloc + 20);
+	condition.classList.add('condition');
+	svg.append(condition);
+
+	// temperature line
+	var spaceLength = getTempRangePercent(range.min, weekRange);
+	var lineLength = getTempRangePercent(range.max, weekRange);
+	var line = document.createElementNS(xmlns, 'line');
+	line.classList.add('day_range');
+	line.setAttributeNS(null, 'x1', spaceLength);
+	line.setAttributeNS(null, 'x2', (lineLength - 10));
+	line.setAttributeNS(null, 'y1', yloc + 15);
+	line.setAttributeNS(null, 'y2', yloc + 15);
+	svg.append(line);
+
+	// min temperature number
+	var tempMin = document.createElementNS(xmlns, 'text');
+	tempMin.textContent = range.min + degreeMark;
+	tempMin.setAttributeNS(null, 'x', spaceLength - 25);
+	tempMin.setAttributeNS(null, 'y', yloc + 20);
+	if (range.min < 33) {
+		tempMin.classList.add('freezing');
+	}
+	svg.append(tempMin);
+
+	// max temperature number
+	var tempMax = document.createElementNS(xmlns, 'text');
+	tempMax.textContent = range.max + degreeMark;
+	tempMax.setAttributeNS(null, 'x', lineLength);
+	tempMax.setAttributeNS(null, 'y', yloc + 20);
+	if (range.max < 33) {
+		tempMax.classList.add('freezing');
+	}
+	svg.append(tempMax);
+
 };
 
 /**
@@ -198,8 +326,8 @@ fetch(apiURL).then(function (response) {
 }).then(function (data) {
 	var weatherData = formatData(data);
 
-	var todayData = weatherData.slice(0, 15);
-	renderToday(todayData);
+	renderToday(weatherData.slice(0, numHourRows));
+	renderWeek(weatherData);
 }).catch(function (err) {
 	// There was an error
 	console.warn('Something went wrong.', err);
