@@ -124,10 +124,13 @@ var renderToday = function(weatherData) {
 /**
  *
  */
-var getDateInIsoFormat = function() {
-	var ddd = new Date();
-	const offset = ddd.getTimezoneOffset();
-	ddd = new Date(ddd.getTime() - (offset*60*1000));
+var getDateInIsoFormat = function(dateObject) {
+	if (dateObject == null) {
+		dateObject = new Date();
+	}
+
+	const offset = dateObject.getTimezoneOffset();
+	var ddd = new Date(dateObject.getTime() - (offset*60*1000));
 	return ddd.toISOString().split('T')[0];
 };
 
@@ -137,8 +140,7 @@ var getDateInIsoFormat = function() {
 var renderWeek = function(weatherData) {
 	var svg = document.querySelector('svg'),
 		weekRange = getMinMaxTemps(weatherData),
-		today = new Date(),
-		todayIso = getDateInIsoFormat(today),
+		todayIso = getDateInIsoFormat(),
 		prevDate = todayIso,
 		sliceDate = '',
 		dayCount = 0,
@@ -147,6 +149,10 @@ var renderWeek = function(weatherData) {
 	// divide up the remaining days into day-tranches
 	for (var iter = 0; iter < weatherData.length; iter++) {
 		sliceDate = weatherData[iter].start.slice(0, 10);
+		// don't draw a day version of today
+		if (todayIso == sliceDate) {
+			continue;
+		}
 
 		// the first slice of a new date
 		if (sliceDate !== prevDate) {
@@ -262,14 +268,12 @@ var renderWeekDay = function(daySlices, weekRange, dayCount) {
 		svg = document.querySelector('svg'),
 		today = new Date(daySlices[0].start),
 		yloc = (numHourRows * rowHeight) + (dayCount * rowHeight),
-		precip = getWorstWeather(daySlices);
-
-
-	console.log(range, weekRange);
+		precip = getWorstWeather(daySlices),
+		dayNum = getDateInIsoFormat(today).replace(/^\d{4}-\d{2}-/, '');
 
 	// day of week
 	var day = document.createElementNS(xmlns, 'text');
-	day.textContent = today.toLocaleDateString(undefined, {weekday: 'long'}).substring(0, 3);
+	day.textContent = today.toLocaleDateString(undefined, {weekday: 'long'}).substring(0, 3) + ' ' + dayNum;
 	day.setAttributeNS(null, 'x', 40);
 	day.setAttributeNS(null, 'y', yloc + 20);
 	svg.append(day);
