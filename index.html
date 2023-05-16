@@ -1,7 +1,13 @@
 <html>
 <head>
 	<style>
+		.header {
+			float: right;
+		}
+
 		svg { 
+			border: 1px solid #eee;
+			display: block;
 			max-width: 100%;
 		}
 
@@ -45,8 +51,9 @@
 
 <body>
 
+<div class="header"><button id="update">Update</button></div>
+<p id="loading">Loading...</p>
 <svg height="100%" viewBox="0 0 600 700">
-	<text x="120" y="140" id="loading">Loading...</text>
 </svg>
 
 </body>

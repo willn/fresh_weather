@@ -115,6 +115,7 @@ var renderToday = function(weatherData) {
 	if (weatherData) {
 		document.querySelector('#loading').style.display = 'none';
 	}
+	svg.style.display = 'block';
 
 	for (var iter = 0; iter < weatherData.length; iter++) {
 		drawHourRow(svg, iter, weatherData[iter], range);
@@ -322,17 +323,36 @@ var renderWeekDay = function(daySlices, weekRange, dayCount) {
 };
 
 /**
- * Get the weather data from NOAA
+ * Request & load the weather data
  */
-fetch(apiURL).then(function (response) {
-	// The API call was successful!
-	return response.json();
-}).then(function (data) {
-	var weatherData = formatData(data);
+var load = function() {
+	fetch(apiURL).then(function (response) {
+		// The API call was successful!
+		return response.json();
+	}).then(function (data) {
+		var weatherData = formatData(data);
 
-	renderToday(weatherData.slice(0, numHourRows));
-	renderWeek(weatherData);
-}).catch(function (err) {
-	// There was an error
-	console.warn('Something went wrong.', err);
+		renderToday(weatherData.slice(0, numHourRows));
+		renderWeek(weatherData);
+	}).catch(function (err) {
+		// There was an error
+		console.warn('Something went wrong.', err);
+	});
+};
+
+/**
+ * Handle click events
+ */
+document.addEventListener('click', function (event) {
+	if (!event.target.matches('#update')) {
+		return;
+	}
+	event.preventDefault();
+
+	document.querySelector('#loading').style.display = 'block';
+	document.querySelector('svg').style.display = 'none';
+	load();
 });
+
+load();
+
