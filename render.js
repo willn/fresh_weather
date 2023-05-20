@@ -2,7 +2,9 @@
  * Render the fresh weather SVG.
  */
 var xmlns = 'http://www.w3.org/2000/svg';
-var apiURL = 'https://api.weather.gov/gridpoints/DTX/40,28/forecast/hourly';
+var apiURL = 'https://api.weather.gov/gridpoints/DTX/39,30/forecast/hourly';
+
+
 var lineDomain = {
 	'low': 150,
 	'high': 500,
@@ -203,19 +205,23 @@ var drawHourRow = function(svg, iter, period, range) {
 	var hour = periodDate.getHours();
 	var yloc = (iter * rowHeight);
 
+	// create a holding group
+	var group = document.createElementNS(xmlns, 'g');
+	svg.append(group);
+
 	// precipitation block
 	var rect = document.createElementNS(xmlns, 'rect');
 	rect.setAttributeNS(null, 'y', yloc);
 	rect.setAttributeNS(null, 'height', rowHeight);
 	rect.classList.add(chance);
-	svg.append(rect);
+	group.append(rect);
 
 	// hour
 	var time = document.createElementNS(xmlns, 'text');
 	time.textContent = formatHour(hour);
 	time.setAttributeNS(null, 'x', 40);
 	time.setAttributeNS(null, 'y', yloc + 20);
-	svg.append(time);
+	group.append(time);
 
 	// condition
 	var condition = document.createElementNS(xmlns, 'text');
@@ -224,7 +230,7 @@ var drawHourRow = function(svg, iter, period, range) {
 	condition.setAttributeNS(null, 'x', 90);
 	condition.setAttributeNS(null, 'y', yloc + 20);
 	condition.classList.add('condition');
-	svg.append(condition);
+	group.append(condition);
 
 	// temperature line
 	var lineLength = getTempRangePercent(period.temp, range);
@@ -233,7 +239,7 @@ var drawHourRow = function(svg, iter, period, range) {
 	line.setAttributeNS(null, 'x2', lineLength);
 	line.setAttributeNS(null, 'y1', yloc + 15);
 	line.setAttributeNS(null, 'y2', yloc + 15);
-	svg.append(line);
+	group.append(line);
 
 	// temperature number
 	var tempr = document.createElementNS(xmlns, 'text');
@@ -243,7 +249,7 @@ var drawHourRow = function(svg, iter, period, range) {
 	if (period.temp < 33) {
 		tempr.classList.add('freezing');
 	}
-	svg.append(tempr);
+	group.append(tempr);
 };
 
 /**
@@ -272,12 +278,16 @@ var renderWeekDay = function(daySlices, weekRange, dayCount) {
 		precip = getWorstWeather(daySlices),
 		dayNum = getDateInIsoFormat(today).replace(/^\d{4}-\d{2}-/, '');
 
+	// create a holding group
+	var group = document.createElementNS(xmlns, 'g');
+	svg.append(group);
+
 	// day of week
 	var day = document.createElementNS(xmlns, 'text');
 	day.textContent = today.toLocaleDateString(undefined, {weekday: 'long'}).substring(0, 3) + ' ' + dayNum;
 	day.setAttributeNS(null, 'x', 40);
 	day.setAttributeNS(null, 'y', yloc + 20);
-	svg.append(day);
+	group.append(day);
 
 	// condition
 	var condition = document.createElementNS(xmlns, 'text');
@@ -287,7 +297,7 @@ var renderWeekDay = function(daySlices, weekRange, dayCount) {
 	condition.setAttributeNS(null, 'x', 90);
 	condition.setAttributeNS(null, 'y', yloc + 20);
 	condition.classList.add('condition');
-	svg.append(condition);
+	group.append(condition);
 
 	// temperature line
 	var spaceLength = getTempRangePercent(range.min, weekRange);
@@ -298,7 +308,7 @@ var renderWeekDay = function(daySlices, weekRange, dayCount) {
 	line.setAttributeNS(null, 'x2', (lineLength - 10));
 	line.setAttributeNS(null, 'y1', yloc + 15);
 	line.setAttributeNS(null, 'y2', yloc + 15);
-	svg.append(line);
+	group.append(line);
 
 	// min temperature number
 	var tempMin = document.createElementNS(xmlns, 'text');
@@ -308,7 +318,7 @@ var renderWeekDay = function(daySlices, weekRange, dayCount) {
 	if (range.min < 33) {
 		tempMin.classList.add('freezing');
 	}
-	svg.append(tempMin);
+	group.append(tempMin);
 
 	// max temperature number
 	var tempMax = document.createElementNS(xmlns, 'text');
@@ -318,7 +328,7 @@ var renderWeekDay = function(daySlices, weekRange, dayCount) {
 	if (range.max < 33) {
 		tempMax.classList.add('freezing');
 	}
-	svg.append(tempMax);
+	group.append(tempMax);
 
 };
 
@@ -350,7 +360,7 @@ document.addEventListener('click', function (event) {
 	event.preventDefault();
 
 	document.querySelector('#loading').style.display = 'block';
-	document.querySelector('svg').style.display = 'none';
+	document.querySelectorAll("svg > g").forEach(e => e.remove());
 	load();
 });
 
